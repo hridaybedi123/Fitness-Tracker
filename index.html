@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF--8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Fitness Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --background-start: #0e1118;
+        --background-end: #141820;
+        --surface-1: #1b1f29;
+        --surface-2: #202530;
+        --text-primary: #e6e9ef;
+        --text-secondary: #9ba1b0;
+        --accent-primary: #6c63ff;
+        --accent-secondary: #3ad1c7;
+        --danger: #ff5f5f;
+      }
+      body {
+        font-family: 'Roboto', sans-serif;
+        background-color: var(--background-start);
+        color: var(--text-primary);
+      }
+      .font-orbitron {
+        font-family: 'Orbitron', sans-serif;
+      }
+      .glass-card {
+        background-color: var(--surface-1);
+        border: 1px solid var(--surface-2);
+        border-radius: 1rem; /* 16px */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      ::-webkit-calendar-picker-indicator {
+          filter: invert(0.8);
+      }
+      .recharts-default-tooltip {
+          background-color: var(--surface-2) !important;
+          border: 1px solid var(--surface-1) !important;
+          border-radius: 0.5rem !important;
+          color: var(--text-primary) !important;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "date-fns": "https://aistudiocdn.com/date-fns@^4.1.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.1",
+    "xlsx": "https://aistudiocdn.com/xlsx@^0.18.5",
+    "date-fns/": "https://aistudiocdn.com/date-fns@^4.1.0/",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.4.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
