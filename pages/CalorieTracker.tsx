@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import { format } from 'date-fns/format';
 import { parse } from 'date-fns/parse';
 import { isValid } from 'date-fns/isValid';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 
 const CalorieTracker: React.FC = () => {
   const { calorieData, addCalorieEntry, updateCalorieEntry, deleteCalorieEntry, clearAllCalorieData, importCalorieData, maintenanceCalories, setMaintenanceCalories } = useAppData();
@@ -124,10 +124,24 @@ const CalorieTracker: React.FC = () => {
         const exercise = entry.exercise || 0;
         const net = intake - exercise;
         const plusMinus = (entry.target || 0) - net;
-        return { date: entry.day, plusMinus };
+        const date = new Date(entry.day);
+        const dayOfWeek = format(date, 'E');
+        return { date: entry.day, dayOfWeek, plusMinus };
     })
     .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  const gradient = (
+    <defs>
+      <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="5%" stopColor="var(--accent-secondary)" stopOpacity={0.8}/>
+        <stop offset="95%" stopColor="var(--accent-secondary)" stopOpacity={0}/>
+      </linearGradient>
+      <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="5%" stopColor="var(--danger)" stopOpacity={0.8}/>
+        <stop offset="95%" stopColor="var(--danger)" stopOpacity={0}/>
+      </linearGradient>
+    </defs>
+  );
 
   return (
     <div className="space-y-6">
@@ -136,11 +150,11 @@ const CalorieTracker: React.FC = () => {
             <div className="lg:col-span-2 glass-card p-4">
                  <div className="flex flex-wrap gap-2 mb-4 justify-between items-center">
                     <div className="flex flex-wrap gap-2">
-                        <button onClick={() => setModalState({ type: 'add' })} className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-md hover:brightness-110 transition">Add Entry</button>
+                        <button onClick={handleAddRow} className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-md hover:brightness-110 transition">Add Entry</button>
                         <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-[var(--surface-2)] text-[var(--text-primary)] border border-gray-600 rounded-md hover:bg-[var(--surface-1)] transition">Import Excel/CSV</button>
                         <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".xlsx, .xls, .csv"/>
                         <button onClick={handleExport} className="px-4 py-2 bg-[var(--surface-2)] text-[var(--text-primary)] border border-gray-600 rounded-md hover:bg-[var(--surface-1)] transition">Export Excel</button>
-                        <button onClick={() => setModalState({ type: 'clear' })} className="px-4 py-2 bg-[var(--danger)]/20 text-[var(--danger)] border border-[var(--danger)]/50 rounded-md hover:bg-[var(--danger)]/40 transition">Clear All</button>
+                        <button onClick={handleClearAll} className="px-4 py-2 bg-[var(--danger)]/20 text-[var(--danger)] border border-[var(--danger)]/50 rounded-md hover:bg-[var(--danger)]/40 transition">Clear All</button>
                     </div>
                      <div>
                         <label className="text-sm text-gray-400 mr-2">Maintenance:</label>
@@ -188,42 +202,25 @@ const CalorieTracker: React.FC = () => {
                 </div>
             </div>
             <div className="lg:col-span-1 glass-card p-4">
-                <h3 className="text-lg font-orbitron text-gray-200 mb-4">Plus/Minus Trend</h3>
+                <h3 className="text-lg font-orbitron text-gray-200 mb-4">Calorie Deficit/Surplus</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={chartData}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                        {gradient}
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                        <XAxis dataKey="date" stroke="#888" tickFormatter={(tick) => format(new Date(tick), 'MM/dd')} />
-                        <YAxis stroke="#888" />
+                        <XAxis dataKey="dayOfWeek" stroke="#888" />
+                        <YAxis stroke="#888" domain={[-3000, 3000]} />
                         <Tooltip contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--surface-1)' }} />
-                        <Line type="monotone" dataKey="plusMinus" name="Plus/Minus" stroke="var(--accent-secondary)" strokeWidth={2} dot={{ r: 3 }} />
-                    </LineChart>
+                        <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
+                        <Bar dataKey="plusMinus" name="Deficit/Surplus">
+                            {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.plusMinus > 0 ? "url(#colorUv)" : "url(#colorPv)"} />
+                            ))}
+                        </Bar>
+                    </BarChart>
                 </ResponsiveContainer>
             </div>
         </div>
 
-      <Modal isOpen={modalState.type === 'add'} onClose={() => setModalState({ type: null })} title="Confirm">
-        <p>Add new entry?</p>
-        <div className="flex justify-end gap-4 mt-4">
-          <button onClick={() => setModalState({ type: null })} className="px-4 py-2 bg-[var(--surface-2)] rounded-md hover:bg-gray-600">Cancel</button>
-          <button onClick={handleAddRow} className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-md hover:brightness-110">Confirm</button>
-        </div>
-      </Modal>
-
-      <Modal isOpen={modalState.type === 'delete'} onClose={() => setModalState({ type: null })} title="Confirm Deletion">
-        <p>Are you sure you want to delete this entry?</p>
-        <div className="flex justify-end gap-4 mt-4">
-          <button onClick={() => setModalState({ type: null })} className="px-4 py-2 bg-[var(--surface-2)] rounded-md hover:bg-gray-600">Cancel</button>
-          <button onClick={() => handleDeleteRow(modalState.data!)} className="px-4 py-2 bg-[var(--danger)] text-white rounded-md hover:brightness-110">Delete</button>
-        </div>
-      </Modal>
-
-      <Modal isOpen={modalState.type === 'clear'} onClose={() => setModalState({ type: null })} title="Confirm Clear All">
-        <p>Are you sure you want to delete all data? This action cannot be undone.</p>
-        <div className="flex justify-end gap-4 mt-4">
-          <button onClick={() => setModalState({ type: null })} className="px-4 py-2 bg-[var(--surface-2)] rounded-md hover:bg-gray-600">Cancel</button>
-          <button onClick={handleClearAll} className="px-4 py-2 bg-[var(--danger)] text-white rounded-md hover:brightness-110">Clear All</button>
-        </div>
-      </Modal>
     </div>
   );
 };

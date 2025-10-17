@@ -10,7 +10,7 @@ import { eachDayOfInterval } from 'date-fns/eachDayOfInterval';
 import { getDay } from 'date-fns/getDay';
 import { isToday } from 'date-fns/isToday';
 import { getDaysInMonth } from 'date-fns/getDaysInMonth';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, Cell } from 'recharts';
 
 const StatCard: React.FC<{ title: string; value: string | number; unit?: string, children?: React.ReactNode }> = ({ title, value, unit, children }) => (
     <div className="glass-card p-4 flex flex-col justify-between h-full">
@@ -56,17 +56,29 @@ const Dashboard: React.FC = () => {
         .slice(-30); // Last 30 entries
 
     const calorieChartData = calorieData
-        .slice()
-        .sort((a,b) => new Date(a.day).getTime() - new Date(b.day).getTime())
-        .map(d => {
-            const net = (d.intake || 0) - (d.exercise || 0);
-            return {
-                date: format(new Date(d.day), 'MM/dd'),
-                surplus: Math.max(0, net - maintenanceCalories),
-                deficit: Math.max(0, maintenanceCalories - net)
-            }
+        .map(entry => {
+            const intake = entry.intake || 0;
+            const exercise = entry.exercise || 0;
+            const net = intake - exercise;
+            const plusMinus = (entry.target || 0) - net;
+            const date = new Date(entry.day);
+            const dayOfWeek = format(date, 'E');
+            return { date: entry.day, dayOfWeek, plusMinus };
         })
-        .slice(-30);
+        .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const gradient = (
+        <defs>
+          <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="var(--accent-secondary)" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="var(--accent-secondary)" stopOpacity={0}/>
+          </linearGradient>
+          <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="var(--danger)" stopOpacity={0.8}/>
+            <stop offset="95%" stopColor="var(--danger)" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+      );
 
     // Consistency Calendar Logic
     const monthStart = startOfMonth(consistencyDate);
@@ -162,21 +174,22 @@ const Dashboard: React.FC = () => {
                     )}
                 </div>
                 <div className="glass-card p-4">
-                    <h3 className="text-lg font-orbitron text-gray-200 mb-4">Calorie Deficit/Surplus (Last 30 days)</h3>
-                     {calorieData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={calorieChartData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                <XAxis dataKey="date" stroke="#888" />
-                                <YAxis stroke="#888" />
-                                <Tooltip contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--surface-1)' }} />
-                                <Bar dataKey="surplus" stackId="a" fill="var(--accent-secondary)" name="Surplus" />
-                                <Bar dataKey="deficit" stackId="a" fill="var(--danger)" name="Deficit" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                     ) : (
-                        <div className="h-[300px] flex items-center justify-center text-gray-500">No calorie data available.</div>
-                     )}
+                    <h3 className="text-lg font-orbitron text-gray-200 mb-4">Calorie Deficit/Surplus</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={calorieChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                            {gradient}
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                            <XAxis dataKey="dayOfWeek" stroke="#888" />
+                            <YAxis stroke="#888" domain={[-3000, 3000]} />
+                            <Tooltip contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--surface-1)' }} />
+                            <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
+                            <Bar dataKey="plusMinus" name="Deficit/Surplus">
+                                {calorieChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.plusMinus > 0 ? "url(#colorUv)" : "url(#colorPv)"} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
